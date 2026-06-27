@@ -1,79 +1,40 @@
 # littlefs-rw
 LittleFS configuration and RW from MacOS ARM64. 
 
-## Configure LittleFS with MacOS  
+*Instructions for how to configure disks with littleFS on macOS devices is outlined in [`LFS_CONFIGURE.md`](LFS_CONFIGURE.md).*
 
-### System Architecture
-```
-[ Files / Directories ]  <-- Input data
-          │
-          ▼
-   [ littlefs-python ]   <-- User-space translation tool (Builds metadata structures)
-          │
-          ▼
-   [ lfs_image.bin ]     <-- Monolithic raw binary image of the filesystem
-          │
-          ▼
-        [ dd ]           <-- Low-level Unix copy utility
-          │
-          ▼
-     [ /dev/rdiskX ]     <-- Direct raw storage block access
-          │
-          ▼
-    [ USB Storage ]      <-- Physical hardware target
-```
+## How to read littleFS on Mac (with MacFUSE)
 
-### Instructions 
+1. Download a **stable release** of [macFUSE](https://macfuse.github.io). The installation process requires a shutdown to enable system extensions. You should be able to see the macFUSE item in System Settings. 
 
-1. Create project folder and Python `venv`. Install `littlefs-python`. 
-```bash
-#[in project root]
-python3 -m venv venv
-source venv/bin/activate
-pip install littlefs-python
-```
-
-2. Stage the data source 
-Since macOS cannot natively open a LittleFS drive with Finder, all files must be prepared beforehand. 
-```bash
-mkdir source_dir
-echo "System Init OK" > source_dir/config.txt
-```
-This local directory acts as a staging area. Everything inside here will be frozen into the final binary image. 
-
-3. Compile the LittleFS binary image
-This command create a raw byte container `lfs-image.bin`. 
+2. Compile the `littlefs-fuse` driver 
+The repo below is **NOT** the official `littlefs-fuse` due to its limited support exclusive to Linux and FreeBSD. 
 ```bash 
-littlefs-python create source_dir lfs_image.bin --fs-size=16mb --block-size=4096
-``` 
-`--fs-size` sets the exact noundary of the filesystem.
-`--block-size` defines the logical erasable sectors. 
+git clone --recursive https://github.com/jserv/littlefs-fuse.git
+cd littlefs-fuse
 
-The tool parses the `source_dir`, creates the specialized inline characters, generated the metadata pairs (that track file modifications), and structures the data to how LittleFS expects to look on an actual flash chip. 
+# Build the binary targeting Apple Silicon architectures via host LLVM
+make
+```
 
-4. Identify the target media block 
+3. Raw device identification 
 ```bash 
 diskutil list
-``` 
-Identify the USB drive in the macOS device tree (eg. `disk2`, `disk7`, etc.). 
+```
+Locate the target path entry (`/dev/diskX`). 
 
-5. Unmount system volume locks 
-When a USB is inserted, macOS kernel automatically attempts to probe it and lock it to prevent concurrent RW errors from other applications. The command below forces a release on the software lock, leaving raw blocks open for low-level writing. 
+4. Mount point instantiaion and I/O binding 
 ```bash 
-diskutil unmountDisk /dev/diskX
-``` 
-Replace the `X` above with the actual disk index. 
+mkdir -p ~/Desktop/littlefs_mount # NOTE: this is an example file path
 
-6. Execute the sector-by-sector write 
+# Spin up the user-space filesystem driver mapping loop
+./lfs /dev/diskX ~/Desktop/littlefs_mount
+```
+**NOTE:** Alter the file path and disk index. 
+
+5. Graceful dismount 
+Safely tear down the active runtime driver and flush all operations in the `lfs` daemon.
 ```bash 
-sudo dd if=lfs_image.bin of=/dev/rdiskX bs=4096 status=progress
+umount ~/Desktop/littlefs_mount
 ``` 
-
-`dd` (data duplicator) at lowest prio level of the OS:
-- `if=lfs_image.bin` specifies input file 
-- `of=/dev/rdiskX` speciifes output file. `rdisk` invokes the **raw character device** interface on macOS. *This completely bypasses the kernel's internal buffer cache, piping the data directly from the Python binary to the USB stick.*
-- `bs=4096` specifies matching block size to the FS configuration in step 3.
-
-
-
 
