@@ -1,7 +1,7 @@
 from littlefs import LittleFS
 
 try:
-    fs = LittleFS(block_size=4096, block_count=4096, mount=False)
+    fs = LittleFS(block_size=512, block_count=30720000, mount=False)
     with open("lfs_image.bin", "rb") as fh:
         fs.context.buffer = bytearray(fh.read())
     fs.mount()
