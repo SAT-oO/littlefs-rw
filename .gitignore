@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# littlefs-fuse-macos build artifacts (submodule source is tracked via .gitmodules)
+littlefs-fuse-macos/lfs
+littlefs-fuse-macos/*.o
+littlefs-fuse-macos/**/*.d

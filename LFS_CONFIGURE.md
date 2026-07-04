@@ -149,5 +149,11 @@ Use the same value for `bs` as your `block_size` from step 4. Note that this pro
 
 11. Read the stick
 
-Follow [README](README.md#read-littlefs-from-usb) to mount the stick and confirm your files (e.g. `config.txt`).
+From `littlefs-fuse-macos/`, mount the stick:
+
+```bash
+sudo ./lfs -o allow_other,defer_permissions /dev/diskX ../littlefs-mount
+```
+
+Follow [README](README.md#read-littlefs-from-usb) for the full read workflow and confirm your files (e.g. `config.txt`).
 

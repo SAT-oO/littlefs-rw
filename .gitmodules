@@ -1,0 +1,3 @@
+[submodule "littlefs-fuse-macos"]
+	path = littlefs-fuse-macos
+	url = https://github.com/SAT-oO/littlefs-fuse-macos.git

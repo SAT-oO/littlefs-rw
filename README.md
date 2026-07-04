@@ -5,20 +5,35 @@ LittleFS configuration and RW from MacOS ARM64.
 
 ## MacFUSE Installation and `littlefs-fuse` Driver Compilation Guide 
 
+0. Clone this repo
+
+```bash
+git clone --recursive https://github.com/SAT-oO/littlefs-rw.git
+cd littlefs-rw
+```
+
+If you already cloned without `--recursive`, initialize the submodule:
+
+```bash
+git submodule update --init --recursive
+```
+
 1. Download a **stable release** of [macFUSE](https://macfuse.github.io). Before you do so, make sure you are aware of the following:
 - The installation process requires a shutdown to enable system extensions. You should be able to see the macFUSE item in System Settings. 
 - To enable system extensions, follow [this guide](https://medium.com/@connie111111/how-i-enable-system-extensions-on-apple-silicon-macs-1726a6076dc9) to avoid restarting your computer repetitively. ***If you are still unsure in what you're doing after reading the above guide, ask someone else to do this for you.***
 
-2. Compile the `littlefs-fuse` driver 
-The repo below is **NOT** the official `littlefs-fuse` due to its limited support exclusive to Linux and FreeBSD. This is my personal fork with added support for macOS. 
-```bash 
-git clone --recursive https://github.com/SAT-oO/littlefs-fuse-macos.git
+2. Compile the `littlefs-fuse` driver
+
+The driver lives in `littlefs-fuse-macos/` (a git submodule). It is **NOT** the official `littlefs-fuse` due to its limited support exclusive to Linux and FreeBSD. This is my personal fork with added support for macOS.
+
+```bash
 cd littlefs-fuse-macos
 
 # Build the binary targeting Apple Silicon architectures via host LLVM
 make
 ```
-You should see a `lfs` binary at `littlefs-fuse-macos/lfs`. 
+
+You should see a `lfs` binary at `littlefs-fuse-macos/lfs`.
 
 
 --- 
@@ -47,7 +62,7 @@ In the **same folder** (`littlefs-fuse-macos/`), start the FUSE driver. Leave th
 mkdir -p ../littlefs-mount
 
 # Spin up the user-space filesystem driver mapping loop
-sudo ./lfs /dev/diskX ../littlefs-mount
+sudo ./lfs -o allow_other,defer_permissions /dev/diskX ../littlefs-mount
 ```
 
 In a **second terminal** (from the project root), read files from the mount point:
